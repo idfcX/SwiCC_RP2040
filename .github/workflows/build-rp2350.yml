@@ -1,0 +1,42 @@
+name: build-rp2350
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "**/*.c"
+      - "**/*.h"
+      - "CMakeLists.txt"
+      - ".github/workflows/build-rp2350.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build build-essential gcc-arm-none-eabi libnewlib-arm-none-eabi
+
+      - name: Get pico-sdk v2
+        run: |
+          git clone --depth 1 https://github.com/raspberrypi/pico-sdk.git "$GITHUB_WORKSPACE/pico-sdk"
+
+      - name: Configure (RP2350)
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: cmake -S . -B build -G Ninja -DPICO_PLATFORM=rp2350 -DPICO_BOARD=pico2
+
+      - name: Build
+        run: cmake --build build -j
+
+      - name: Upload UF2
+        uses: actions/upload-artifact@v4
+        with:
+          name: SwiCC_RP2350.uf2
+          path: build/*.uf2
