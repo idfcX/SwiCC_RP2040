@@ -23,9 +23,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build build-essential gcc-arm-none-eabi libnewlib-arm-none-eabi
 
-      - name: Get pico-sdk v2
+      - name: Get pico-sdk (with TinyUSB submodules)
         run: |
-          git clone --depth 1 https://github.com/raspberrypi/pico-sdk.git "$GITHUB_WORKSPACE/pico-sdk"
+          git clone --recurse-submodules https://github.com/raspberrypi/pico-sdk.git "$GITHUB_WORKSPACE/pico-sdk"
+          # Optional: pin to a known tag
+          # git -C "$GITHUB_WORKSPACE/pico-sdk" checkout 2.0.0
 
       - name: Configure (RP2350)
         env:
