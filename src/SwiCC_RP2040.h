@@ -1,5 +1,7 @@
 #include <stdint.h>
 #include "ws2812.pio.h"
+#include "hardware/irq.h"
+#include "hardware/timer.h"
 
 // Controller HID report structure.
 typedef struct {
@@ -73,7 +75,12 @@ enum {
 #define UART_RX_PIN 1
 #define VSYNC_IN_PIN 14
 
+#if PICO_RP2350
+#define ALARM_IRQ TIMER1_IRQ_0
+#else
 #define ALARM_IRQ TIMER_IRQ_0
+#endif
+
 
 #define CON_BUFF_LEN 256
 #define REC_BUFF_LEN 16384
