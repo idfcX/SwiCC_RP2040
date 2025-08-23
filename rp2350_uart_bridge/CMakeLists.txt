@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 17)
 pico_sdk_init()
 
 add_executable(rp2350_uart_bridge main.c)
+target_compile_definitions(rp2350_uart_bridge PUBLIC CFG_TUSB_CONFIG_FILE="tusb_config.h")
+
 
 target_link_libraries(rp2350_uart_bridge
   pico_stdlib
