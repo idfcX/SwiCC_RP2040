@@ -8,12 +8,13 @@ on:
       - "**/*.h"
       - "CMakeLists.txt"
       - ".github/workflows/build-rp2350.yml"
+      - "rp2350_uart_bridge/**"
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout (with submodules)
         uses: actions/checkout@v4
         with:
           submodules: recursive
@@ -21,24 +22,43 @@ jobs:
       - name: Install toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build build-essential gcc-arm-none-eabi libnewlib-arm-none-eabi
+          sudo apt-get install -y cmake ninja-build build-essential gcc-arm-none-eabi libnewlib-arm-none-eabi git
 
-      - name: Get pico-sdk (with TinyUSB submodules)
+      - name: Get pico-sdk (with TinyUSB)
         run: |
           git clone --recurse-submodules https://github.com/raspberrypi/pico-sdk.git "$GITHUB_WORKSPACE/pico-sdk"
-          # Optional: pin to a known tag
-          # git -C "$GITHUB_WORKSPACE/pico-sdk" checkout 2.0.0
 
-      - name: Configure (RP2350)
+      # ===== Build SwiCC for RP2350 =====
+      - name: Configure SwiCC (RP2350)
         env:
           PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
-        run: cmake -S . -B build -G Ninja -DPICO_PLATFORM=rp2350 -DPICO_BOARD=pico2
+        run: |
+          cmake -S . -B build-swiccrp2350 -G Ninja -DPICO_PLATFORM=rp2350 -DPICO_BOARD=pico2
 
-      - name: Build
-        run: cmake --build build -j
+      - name: Build SwiCC
+        run: cmake --build build-swiccrp2350 -j
 
-      - name: Upload UF2
+      - name: Upload SwiCC UF2
         uses: actions/upload-artifact@v4
         with:
           name: SwiCC_RP2350.uf2
-          path: build/*.uf2
+          path: build-swiccrp2350/*.uf2
+
+      # ===== Build the UART Bridge (RP2350) if present =====
+      - name: Configure UART Bridge (RP2350)
+        if: ${{ hashFiles('rp2350_uart_bridge/main.c') != '' }}
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: |
+          cmake -S rp2350_uart_bridge -B rp2350_uart_bridge/build -G Ninja -DPICO_PLATFORM=rp2350 -DPICO_BOARD=pico2
+
+      - name: Build UART Bridge
+        if: ${{ hashFiles('rp2350_uart_bridge/main.c') != '' }}
+        run: cmake --build rp2350_uart_bridge/build -j
+
+      - name: Upload UART Bridge UF2
+        if: ${{ hashFiles('rp2350_uart_bridge/main.c') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: rp2350_uart_bridge.uf2
+          path: rp2350_uart_bridge/build/*.uf2
